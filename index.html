@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MBA Game Score Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.css"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#5D5CDE",
+              secondary: "#f3f4f6",
+              smith: {
+                red: "#e21833",
+                yellow: "#ffd200",
+                dark: "#1a1a1a",
+              },
+            },
+          },
+        },
+        darkMode: "class",
+      };
+
+      // Check for dark mode preference
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        document.documentElement.classList.add("dark");
+      }
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (event) => {
+          if (event.matches) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        });
+    </script>
+    <style>
+      .loading-spinner {
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 3px solid #5d5cde;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+      }
+
+      .dark .loading-spinner {
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top: 3px solid #5d5cde;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+
+      .dark ::-webkit-scrollbar-track {
+        background: #2d2d2d;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen"
+  >
+    <div id="app" class="container mx-auto px-4 py-8 max-w-6xl">
+      <div
+        id="login-container"
+        class="flex flex-col items-center justify-center min-h-[60vh]"
+      >
+        <div class="text-center mb-8">
+          <h1 class="text-3xl md:text-4xl font-bold mb-2 text-smith-red">
+            Smith School MBA Game
+          </h1>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            2025 Cohort Score Tracking System
+          </p>
+        </div>
+        <div
+          class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+        >
+          <h2 class="text-2xl font-bold mb-6 text-center">Sign In</h2>
+          <form id="login-form" class="space-y-4">
+            <div>
+              <label for="email" class="block text-sm font-medium mb-1"
+                >Email Address</label
+              >
+              <input
+                type="email"
+                id="email"
+                class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                placeholder="your.email@umd.edu"
+                required
+              />
+            </div>
+            <div>
+              <label for="password" class="block text-sm font-medium mb-1"
+                >Password</label
+              >
+              <input
+                type="password"
+                id="password"
+                class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label for="remember" class="ml-2 block text-sm"
+                  >Remember me</label
+                >
+              </div>
+              <button
+                type="button"
+                class="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-primary hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-200"
+            >
+              Sign In
+            </button>
+            <div class="mt-4 text-center">
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Don't have an account?
+                <button
+                  type="button"
+                  id="register-toggle"
+                  class="text-primary hover:underline"
+                >
+                  Register
+                </button>
+              </p>
+            </div>
+          </form>
+        </div>
+        <div class="mt-4 text-center">
+          <button id="demo-login" class="text-primary hover:underline">
+            Use Demo Mode
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="register-container"
+        class="hidden flex flex-col items-center justify-center min-h-[80vh]"
+      >
+        <div class="text-center mb-8">
+          <h1 class="text-3xl md:text-4xl font-bold mb-2 text-smith-red">
+            Smith School MBA Game
+          </h1>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            Create Your Account
+          </p>
+        </div>
+        <div
+          class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+        >
+          <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
+          <form id="register-form" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="first-name" class="block text-sm font-medium mb-1"
+                  >First Name</label
+                >
+                <input
+                  type="text"
+                  id="first-name"
+                  class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                  required
+                />
+              </div>
+              <div>
+                <label for="last-name" class="block text-sm font-medium mb-1"
+                  >Last Name</label
+                >
+                <input
+                  type="text"
+                  id="last-name"
+                  class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label for="reg-email" class="block text-sm font-medium mb-1"
+                >Email Address</label
+              >
+              <input
+                type="email"
+                id="reg-email"
+                class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                placeholder="your.email@umd.edu"
+                required
+              />
+            </div>
+            <div>
+              <label for="reg-password" class="block text-sm font-medium mb-1"
+                >Password</label
+              >
+              <input
+                type="password"
+                id="reg-password"
+                class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <div>
+              <label for="team" class="block text-sm font-medium mb-1"
+                >Your Team</label
+              >
+              <select
+                id="team"
+                class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                required
+              >
+                <option value="" selected disabled>Select your team</option>
+                <option value="Team Terrapins">Team Terrapins</option>
+                <option value="Team Ravens">Team Ravens</option>
+                <option value="Team Diplomats">Team Diplomats</option>
+                <option value="Team Chesapeake">Team Chesapeake</option>
+                <option value="Team Orioles">Team Orioles</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-primary hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-200"
+            >
+              Create Account
+            </button>
+            <div class="mt-4 text-center">
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Already have an account?
+                <button
+                  type="button"
+                  id="login-toggle"
+                  class="text-primary hover:underline"
+                >
+                  Sign In
+                </button>
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="main-app" class="hidden">
+        <header
+          class="flex flex-col md:flex-row justify-between items-center mb-8"
+        >
+          <div class="flex items-center mb-4 md:mb-0">
+            <img
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjZTIxODMzIj48cGF0aCBkPSJNNTAgOTBjMjIuMSAwIDQwLTE3LjkgNDAtNDBTNzIuMSAxMCA1MCAxMCAxMCAyNy45IDEwIDUwczE3LjkgNDAgNDAgNDB6bTAtNzBjMTYuNSAwIDMwIDEzLjUgMzAgMzBTNjYuNSA4MCA1MCA4MCAyMCA2Ni41IDIwIDUwczEzLjUtMzAgMzAtMzB6Ii8+PHBhdGggZD0iTTM1IDY1aDMwVjM1SDM1djMwem0xMC0yMGgxMHYxMEg0NVY0NXoiLz48L3N2Zz4="
+              alt="Logo"
+              class="h-10 w-10 mr-3"
+            />
+            <div>
+              <h1 class="text-2xl font-bold text-smith-red">
+                MBA Game Score Tracker
+              </h1>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Deadline: August 26, 2024
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span id="user-info" class="text-sm font-medium"></span>
+            <div class="relative">
+              <button
+                id="user-menu-button"
+                class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none"
+              >
+                <i class="fas fa-user"></i>
+              </button>
+              <div
+                id="user-menu"
+                class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10"
+              >
+                <button
+                  id="profile-btn"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Profile
+                </button>
+                <button
+                  id="switch-team-btn"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Switch Team
+                </button>
+                <button
+                  id="logout-btn"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="mb-6">
+          <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 md:p-6">
+            <div class="flex flex-col md:flex-row justify-between">
+              <div class="mb-4 md:mb-0 flex-1 md:mr-4">
+                <h2 class="text-xl font-bold mb-2">
+                  Your Points:
+                  <span id="user-points" class="text-smith-red">0</span>
+                </h2>
+                <div class="flex items-center">
+                  <div class="text-sm">
+                    Team: <span id="user-team" class="font-medium"></span>
+                  </div>
+                  <div class="mx-2 text-gray-400">|</div>
+                  <div class="text-sm">
+                    Team Points:
+                    <span id="team-points" class="font-medium">0</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-sm font-medium mb-1">Your Progress</h3>
+                <div
+                  class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4"
+                >
+                  <div
+                    id="progress-bar"
+                    class="bg-primary rounded-full h-4"
+                    style="width: 0%"
+                  ></div>
+                </div>
+                <div class="text-xs text-right mt-1">
+                  Next level: <span id="next-level">10 points</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="col-span-1 md:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+              <div class="border-b dark:border-gray-700">
+                <nav class="flex -mb-px">
+                  <button
+                    id="tab-submit"
+                    class="tab-btn text-primary border-primary px-4 py-3 text-sm font-medium border-b-2 focus:outline-none"
+                  >
+                    Submit Activity
+                  </button>
+                  <button
+                    id="tab-history"
+                    class="tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 px-4 py-3 text-sm font-medium border-b-2 border-transparent focus:outline-none"
+                  >
+                    Your History
+                  </button>
+                  <button
+                    id="tab-rules"
+                    class="tab-btn text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 px-4 py-3 text-sm font-medium border-b-2 border-transparent focus:outline-none"
+                  >
+                    Game Rules
+                  </button>
+                </nav>
+              </div>
+
+              <div id="content-submit" class="tab-content p-4">
+                <h2 class="text-lg font-bold mb-4">Submit New Activity</h2>
+                <form id="activity-form" class="space-y-4">
+                  <div>
+                    <label
+                      for="activity-type"
+                      class="block text-sm font-medium mb-1"
+                      >Activity Type</label
+                    >
+                    <select
+                      id="activity-type"
+                      class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                      required
+                    >
+                      <option value="" selected disabled>
+                        Select activity type
+                      </option>
+                      <optgroup label="1 Point Activities">
+                        <option value="social_post">Social Media Post</option>
+                        <option value="linkedin_connection">
+                          LinkedIn Connection
+                        </option>
+                        <option value="instagram_follow">
+                          Instagram Follow
+                        </option>
+                        <option value="share_resource">Shared Resource</option>
+                        <option value="birthday_wish">Birthday Wish</option>
+                        <option value="class_registration">
+                          Class Registration
+                        </option>
+                      </optgroup>
+                      <optgroup label="3 Point Activities">
+                        <option value="personal_bio">Personalized Bio</option>
+                        <option value="student_chat">MPO Student Chat</option>
+                        <option value="orientation_survey">
+                          MPO Pre-orientation Survey
+                        </option>
+                        <option value="photo_release">MPO Photo Release</option>
+                      </optgroup>
+                      <optgroup label="5 Point Activities">
+                        <option value="smith_representation">
+                          Smith Representation Photo
+                        </option>
+                        <option value="admitted_event">
+                          Admitted Student Event
+                        </option>
+                      </optgroup>
+                      <optgroup label="7 Point Activities">
+                        <option value="team_meetup">Team Meet-n-Greet</option>
+                        <option value="meetup_attendance">
+                          Meet-n-Greet Attendance
+                        </option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div id="activity-details" class="space-y-4">
+                    <!-- Dynamic content will be added here based on activity type -->
+                  </div>
+
+                  <div id="evidence-upload" class="hidden">
+                    <label for="evidence" class="block text-sm font-medium mb-1"
+                      >Upload Evidence</label
+                    >
+                    <div
+                      class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md"
+                    >
+                      <div class="space-y-1 text-center">
+                        <svg
+                          class="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                        <div
+                          class="flex text-sm text-gray-600 dark:text-gray-400"
+                        >
+                          <label
+                            for="file-upload"
+                            class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-primary hover:text-indigo-500 focus-within:outline-none"
+                          >
+                            <span>Upload a file</span>
+                            <input
+                              id="file-upload"
+                              name="file-upload"
+                              type="file"
+                              class="sr-only"
+                            />
+                          </label>
+                          <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          PNG, JPG, GIF up to 5MB
+                        </p>
+                      </div>
+                    </div>
+                    <div id="file-preview" class="mt-2 hidden">
+                      <div
+                        class="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded"
+                      >
+                        <span id="file-name" class="text-sm truncate"></span>
+                        <button
+                          type="button"
+                          id="remove-file"
+                          class="text-red-500 hover:text-red-700"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="notes" class="block text-sm font-medium mb-1"
+                      >Additional Notes</label
+                    >
+                    <textarea
+                      id="notes"
+                      rows="3"
+                      class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600"
+                      placeholder="Add any relevant details here..."
+                    ></textarea>
+                  </div>
+
+                  <div class="flex justify-end">
+                    <button
+                      type="submit"
+                      class="bg-primary hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-200"
+                    >
+                      Submit for Approval
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div id="content-history" class="tab-content p-4 hidden">
+                <h2 class="text-lg font-bold mb-4">Your Activity History</h2>
+                <div class="overflow-auto max-h-96">
+                  <table
+                    class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
+                  >
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <th
+                          scope="col"
+                          class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        >
+                          Date
+                        </th>
+                        <th
+                          scope="col"
+                          class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        >
+                          Activity
+                        </th>
+                        <th
+                          scope="col"
+                          class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        >
+                          Points
+                        </th>
+                        <th
+                          scope="col"
+                          class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        >
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      id="activity-history"
+                      class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
+                    >
+                      <!-- Activity history will be populated here -->
+                    </tbody>
+                  </table>
+                  <div
+                    id="no-history"
+                    class="py-8 text-center text-gray-500 dark:text-gray-400 hidden"
+                  >
+                    No activities submitted yet.
+                  </div>
+                </div>
+              </div>
+
+              <div id="content-rules" class="tab-content p-4 hidden">
+                <h2 class="text-lg font-bold mb-4">
+                  Smith School Summer Sweepstakes Rules
+                </h2>
+                <div
+                  class="prose prose-sm dark:prose-invert max-w-none overflow-auto max-h-96"
+                >
+                  <div id="rules-content">
+                    <!-- Rules content will be populated here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-span-1">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+              <div class="border-b dark:border-gray-700">
+                <nav class="flex -mb-px">
+                  <button
+                    id="tab-teams"
+                    class="leaderboard-tab text-primary border-primary px-4 py-3 text-sm font-medium border-b-2 focus:outline-none"
+                  >
+                    Team Leaderboard
+                  </button>
+                  <button
+                    id="tab-individuals"
+                    class="leaderboard-tab text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 px-4 py-3 text-sm font-medium border-b-2 border-transparent focus:outline-none"
+                  >
+                    Individual Rank
+                  </button>
+                </nav>
+              </div>
+
+              <div id="content-teams" class="leaderboard-content p-4">
+                <h3
+                  class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3"
+                >
+                  Team Rankings
+                </h3>
+                <div class="space-y-4">
+                  <div id="team-leaderboard">
+                    <!-- Team leaderboard entries will be populated here -->
+                  </div>
+                </div>
+              </div>
+
+              <div
+                id="content-individuals"
+                class="leaderboard-content p-4 hidden"
+              >
+                <h3
+                  class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3"
+                >
+                  Top Individuals
+                </h3>
+                <div class="space-y-4">
+                  <div id="individual-leaderboard">
+                    <!-- Individual leaderboard entries will be populated here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4"
+            >
+              <h3 class="font-medium mb-3">Upcoming Deadlines</h3>
+              <ul class="space-y-3">
+                <li class="flex items-start">
+                  <div class="flex-shrink-0 h-5 w-5 text-green-500">
+                    <i class="fas fa-calendar-check"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium">Points Tally Update</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      This Thursday, 12:00 PM EST
+                    </p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <div class="flex-shrink-0 h-5 w-5 text-yellow-500">
+                    <i class="fas fa-calendar-alt"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium">Shell of a Brunch</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      July 15, 2024
+                    </p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <div class="flex-shrink-0 h-5 w-5 text-red-500">
+                    <i class="fas fa-hourglass-end"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium">Final Deadline</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      August 26, 2024
+                    </p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="notification"
+          class="fixed bottom-5 right-5 p-4 rounded-md shadow-lg transform transition-transform duration-300 scale-0 z-50 bg-white dark:bg-gray-800 border-l-4"
+        >
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i
+                id="notification-icon"
+                class="fas fa-check-circle text-green-500"
+              ></i>
+            </div>
+            <div class="ml-3">
+              <p id="notification-text" class="text-sm font-medium"></p>
+            </div>
+            <div class="ml-auto pl-3">
+              <div class="-mx-1.5 -my-1.5">
+                <button
+                  id="close-notification"
+                  class="inline-flex bg-white dark:bg-gray-800 rounded-md p-1.5 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Mock data structure for demonstration
+      const mockData = {
+        users: [
+          {
+            id: 1,
+            firstName: "John",
+            lastName: "Smith",
+            email: "demo@umd.edu",
+            password: "password",
+            teamId: 1,
+            points: 15,
+          },
+          {
+            id: 2,
+            firstName: "Alice",
+            lastName: "Johnson",
+            email: "alice@umd.edu",
+            password: "password",
+            teamId: 2,
+            points: 21,
+          },
+          {
+            id: 3,
+            firstName: "Michael",
+            lastName: "Brown",
+            email: "michael@umd.edu",
+            password: "password",
+            teamId: 3,
+            points: 18,
+          },
+          {
+            id: 4,
+            firstName: "Emily",
+            lastName: "Davis",
+            email: "emily@umd.edu",
+            password: "password",
+            teamId: 1,
+            points: 9,
+          },
+          {
+            id: 5,
+            firstName: "David",
+            lastName: "Wilson",
+            email: "david@umd.edu",
+            password: "password",
+            teamId: 2,
+            points: 12,
+          },
+          {
+            id: 6,
+            firstName: "Sarah",
+            lastName: "Martinez",
+            email: "sarah@umd.edu",
+            password: "password",
+            teamId: 4,
+            points: 24,
+          },
+          {
+            id: 7,
+            firstName: "Robert",
+            lastName: "Anderson",
+            email: "robert@umd.edu",
+            password: "password",
+            teamId: 5,
+            points: 7,
+          },
+          {
+            id: 8,
+            firstName: "Jennifer",
+            lastName: "Taylor",
+            email: "jennifer@umd.edu",
+            password: "password",
+            teamId: 3,
+            points: 16,
+          },
+        ],
+        teams: [
+          { id: 1, name: "Team Terrapins", points: 39 },
+          { id: 2, name: "Team Ravens", points: 43 },
+          { id: 3, name: "Team Diplomats", points: 34 },
+          { id: 4, name: "Team Chesapeake", points: 31 },
+          { id: 5, name: "Team Orioles", points: 27 },
+        ],
+        activities: [
+          {
+            id: 1,
+            userId: 1,
+            type: "social_post",
+            details: "LinkedIn post about Smith MBA journey",
+            points: 1,
+            date: "2024-06-01",
+            status: "approved",
+            evidence: "linkedin-post.jpg",
+          },
+          {
+            id: 2,
+            userId: 1,
+            type: "linkedin_connection",
+            details: "Connected with Sarah Jones (Alumni 2023)",
+            points: 1,
+            date: "2024-06-03",
+            status: "approved",
+            evidence: "connection.jpg",
+          },
+          {
+            id: 3,
+            userId: 1,
+            type: "personal_bio",
+            details: "Created and shared personal bio with the WhatsApp group",
+            points: 3,
+            date: "2024-06-05",
+            status: "approved",
+            evidence: "bio.jpg",
+          },
+          {
+            id: 4,
+            userId: 1,
+            type: "instagram_follow",
+            details: "Followed umdsmithgrad Instagram account",
+            points: 1,
+            date: "2024-06-07",
+            status: "approved",
+            evidence: "instagram.jpg",
+          },
+          {
+            id: 5,
+            userId: 1,
+            type: "smith_representation",
+            details: "Representing Smith at Washington Monument",
+            points: 5,
+            date: "2024-06-10",
+            status: "approved",
+            evidence: "monument.jpg",
+          },
+          {
+            id: 6,
+            userId: 1,
+            type: "admitted_event",
+            details: "Attended Smith Trivia Night",
+            points: 5,
+            date: "2024-06-12",
+            status: "pending",
+            evidence: "trivia.jpg",
+          },
+          {
+            id: 7,
+            userId: 1,
+            type: "meetup_attendance",
+            details: "Attended Team Terrapins meet-n-greet",
+            points: 2,
+            date: "2024-06-15",
+            status: "rejected",
+            evidence: "meetup.jpg",
+            notes: "No verification provided",
+          },
+        ],
+        activityTypes: {
+          social_post: {
+            name: "Social Media Post",
+            points: 1,
+            limit: 5,
+            evidence: true,
+          },
+          linkedin_connection: {
+            name: "LinkedIn Connection",
+            points: 1,
+            limit: 10,
+            evidence: true,
+          },
+          instagram_follow: {
+            name: "Instagram Follow",
+            points: 1,
+            limit: 1,
+            evidence: true,
+          },
+          share_resource: {
+            name: "Shared Resource",
+            points: 1,
+            limit: 5,
+            evidence: false,
+          },
+          birthday_wish: {
+            name: "Birthday Wish",
+            points: 1,
+            limit: 999,
+            evidence: false,
+          },
+          class_registration: {
+            name: "Class Registration",
+            points: 1,
+            limit: 1,
+            evidence: false,
+          },
+          personal_bio: {
+            name: "Personalized Bio",
+            points: 3,
+            limit: 1,
+            evidence: true,
+          },
+          student_chat: {
+            name: "MPO Student Chat",
+            points: 3,
+            limit: 1,
+            evidence: false,
+          },
+          orientation_survey: {
+            name: "MPO Pre-orientation Survey",
+            points: 3,
+            limit: 1,
+            evidence: false,
+          },
+          photo_release: {
+            name: "MPO Photo Release",
+            points: 3,
+            limit: 1,
+            evidence: false,
+          },
+          smith_representation: {
+            name: "Smith Representation Photo",
+            points: 5,
+            limit: 3,
+            evidence: true,
+          },
+          admitted_event: {
+            name: "Admitted Student Event",
+            points: 5,
+            limit: 999,
+            evidence: true,
+          },
+          team_meetup: {
+            name: "Team Meet-n-Greet",
+            points: 7,
+            limit: 1,
+            evidence: true,
+          },
+          meetup_attendance: {
+            name: "Meet-n-Greet Attendance",
+            points: 2,
+            limit: 999,
+            evidence: true,
+          },
+        },
+      };
+
+      // Global state for the current user
+      let currentUser = null;
+
+      // DOM Elements
+      const loginContainer = document.getElementById("login-container");
+      const registerContainer = document.getElementById("register-container");
+      const mainApp = document.getElementById("main-app");
+      const loginForm = document.getElementById("login-form");
+      const registerForm = document.getElementById("register-form");
+      const demoLoginBtn = document.getElementById("demo-login");
+      const registerToggleBtn = document.getElementById("register-toggle");
+      const loginToggleBtn = document.getElementById("login-toggle");
+      const userInfoEl = document.getElementById("user-info");
+      const userPointsEl = document.getElementById("user-points");
+      const userTeamEl = document.getElementById("user-team");
+      const teamPointsEl = document.getElementById("team-points");
+      const progressBarEl = document.getElementById("progress-bar");
+      const nextLevelEl = document.getElementById("next-level");
+      const userMenuBtn = document.getElementById("user-menu-button");
+      const userMenu = document.getElementById("user-menu");
+      const logoutBtn = document.getElementById("logout-btn");
+      const tabButtons = document.querySelectorAll(".tab-btn");
+      const tabContents = document.querySelectorAll(".tab-content");
+      const leaderboardTabButtons =
+        document.querySelectorAll(".leaderboard-tab");
+      const leaderboardContents = document.querySelectorAll(
+        ".leaderboard-content"
+      );
+      const activityForm = document.getElementById("activity-form");
+      const activityTypeSelect = document.getElementById("activity-type");
+      const activityDetailsContainer =
+        document.getElementById("activity-details");
+      const evidenceUploadContainer =
+        document.getElementById("evidence-upload");
+      const fileUpload = document.getElementById("file-upload");
+      const filePreview = document.getElementById("file-preview");
+      const fileName = document.getElementById("file-name");
+      const removeFileBtn = document.getElementById("remove-file");
+      const activityHistoryTable = document.getElementById("activity-history");
+      const noHistoryMessage = document.getElementById("no-history");
+      const teamLeaderboardContainer =
+        document.getElementById("team-leaderboard");
+      const individualLeaderboardContainer = document.getElementById(
+        "individual-leaderboard"
+      );
+      const rulesContentContainer = document.getElementById("rules-content");
+      const notification = document.getElementById("notification");
+      const notificationIcon = document.getElementById("notification-icon");
+      const notificationText = document.getElementById("notification-text");
+      const closeNotificationBtn =
+        document.getElementById("close-notification");
+
+      // Rules content
+      const rulesMarkdown = `
+# Welcome to the Smith School Summer Sweepstakes!
+
+## What is it?
+
+A fun way for you all to learn more about Smith, each other, and to prepare for the Fall.
+
+## When does it start?
+
+Immediately! And it will run through the start of classes (August 26th, 2024). On August 26th, we will tally up the final scores and declare the winners.
+
+## How do I score points?
+
+There are many ways to score points, but each is tied to a different activity that will help you get ready for the start of the program.
+
+### 1 Point Activities:
+
+- Any social media post mentioning that you are beginning your MBA journey at Smith. You must share a screenshot of the post in order to score points (limit one post per social media platform or five total, whichever comes first).
+
+- Any time you connect with a current or former Smith MBA student on LinkedIn. Other incoming MBAs do not count. You must share a screenshot of the connection in order to score points (limit 10 connections total).
+
+- Following the umdsmithgrad Instagram account. You must share a screenshot verifying this in order to score points.
+
+- Any time you share pertinent resources to the other members of your Team in the WhatsApp group. The resources may not repeat ones shared previously (limit 5 resources per person).
+
+- Wishing another member of your Team a happy birthday. This must occur on their actual birthday (based on Eastern Standard Time).
+
+- Registering for first semester classes.
+
+### 3 Point Activities:
+
+- Creating a personalized bio of yourself that we can share with the rest of the WhatsApp community so that they can get to know you better. The bio must, at the very least, include a picture of you, as well as information about your country, your work background, your post-MBA goals, and some fun facts about yourself (limit one bio per person).
+
+- Attending at least 2 of the MPO admitted student chats.
+
+- Completing the MPO pre-orientation survey.
+
+- Completing the MPO photo release form.
+
+### 5 Point Activities:
+
+- Representing Smith at a non-UMD event or significant location and sharing the picture with your WhatsApp group. You must have some form of UMD/Smith swag in the picture in order for it to count. Events may be more informal like a sporting event or festival, whereas locations must be unique and special, like a national monument, the top of a mountain, the White House, etc. It can't just be your house, work, or someplace mundane! (Limit 3 pictures per person).
+
+- Attending a virtual or in-person admitted student event between now and the start of classes (including but not limited to Shell of a Brunch, Preparing for Graduate School webinars, Smith Trivia Night).
+
+### 7 Point Activities:
+
+- Planning and executing a virtual meet-n-greet with your Team. The 7 points are earned only for the Team itself overall and not for the individuals in the team. In order to receive the 7 points, you must get at least ⅓ of your current team to attend (as measured by the number of members in your WhatsApp Team on the day of the event). Additionally, every attendee will receive 2 points themselves, even if you do not meet the ⅓ attendance requirement. Meet-n-Greets must be done over Zoom, recorded by the host of the Zoom (limit 1 meet-n-greet per Team).
+
+## What are the prizes?
+
+The highest scoring Team will get unique Smith Swag and the 3 highest scoring individuals will get the opportunity to have lunch with Dean Konana. There may also be other mystery prizes along the way as well!
+`;
+
+      // Event Listeners
+      document.addEventListener("DOMContentLoaded", initApp);
+      loginForm.addEventListener("submit", handleLogin);
+      registerForm.addEventListener("submit", handleRegister);
+      demoLoginBtn.addEventListener("click", handleDemoLogin);
+      registerToggleBtn.addEventListener("click", () => {
+        loginContainer.classList.add("hidden");
+        registerContainer.classList.remove("hidden");
+      });
+      loginToggleBtn.addEventListener("click", () => {
+        registerContainer.classList.add("hidden");
+        loginContainer.classList.remove("hidden");
+      });
+      userMenuBtn.addEventListener("click", toggleUserMenu);
+      logoutBtn.addEventListener("click", handleLogout);
+      document.addEventListener("click", (e) => {
+        if (!userMenuBtn.contains(e.target) && !userMenu.contains(e.target)) {
+          userMenu.classList.add("hidden");
+        }
+      });
+
+      // Tab navigation
+      tabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const tabId = button.id.replace("tab-", "");
+          switchTab(tabId, tabButtons, tabContents);
+        });
+      });
+
+      leaderboardTabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const tabId = button.id.replace("tab-", "");
+          switchTab(tabId, leaderboardTabButtons, leaderboardContents);
+        });
+      });
+
+      activityTypeSelect.addEventListener("change", updateActivityForm);
+
+      fileUpload.addEventListener("change", handleFileUpload);
+      removeFileBtn.addEventListener("click", removeFile);
+
+      activityForm.addEventListener("submit", handleActivitySubmit);
+
+      closeNotificationBtn.addEventListener("click", hideNotification);
+
+      // Initialize the application
+      function initApp() {
+        // Set up tabs
+        switchTab("submit", tabButtons, tabContents);
+        switchTab("teams", leaderboardTabButtons, leaderboardContents);
+
+        // Render the rules content
+        rulesContentContainer.innerHTML = marked.parse(rulesMarkdown);
+
+        // Set up mock data
+        updateLeaderboards();
+      }
+
+      // Handle login form submission
+      function handleLogin(e) {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        // Simple validation
+        if (!email || !password) {
+          showNotification("Please enter both email and password.", "error");
+          return;
+        }
+
+        // Find user in mock data
+        const user = mockData.users.find(
+          (u) => u.email === email && u.password === password
+        );
+
+        if (user) {
+          loginUser(user);
+        } else {
+          showNotification("Invalid email or password.", "error");
+        }
+      }
+
+      // Handle registration form submission
+      function handleRegister(e) {
+        e.preventDefault();
+
+        const firstName = document.getElementById("first-name").value;
+        const lastName = document.getElementById("last-name").value;
+        const email = document.getElementById("reg-email").value;
+        const password = document.getElementById("reg-password").value;
+        const teamName = document.getElementById("team").value;
+
+        // Simple validation
+        if (!firstName || !lastName || !email || !password || !teamName) {
+          showNotification("Please fill in all fields.", "error");
+          return;
+        }
+
+        // Check if email already exists
+        if (mockData.users.some((u) => u.email === email)) {
+          showNotification("Email is already registered.", "error");
+          return;
+        }
+
+        // Find team
+        const team = mockData.teams.find((t) => t.name === teamName);
+
+        if (!team) {
+          showNotification("Invalid team selection.", "error");
+          return;
+        }
+
+        // Create new user
+        const newUser = {
+          id: mockData.users.length + 1,
+          firstName,
+          lastName,
+          email,
+          password,
+          teamId: team.id,
+          points: 0,
+        };
+
+        // Add to mock data
+        mockData.users.push(newUser);
+
+        // Log in the new user
+        loginUser(newUser);
+        showNotification("Account created successfully!", "success");
+      }
+
+      // Handle demo login
+      function handleDemoLogin() {
+        // Use the first user as the demo user
+        loginUser(mockData.users[0]);
+      }
+
+      // Login user and set up the application
+      function loginUser(user) {
+        currentUser = user;
+
+        // Update UI
+        loginContainer.classList.add("hidden");
+        registerContainer.classList.add("hidden");
+        mainApp.classList.remove("hidden");
+
+        userInfoEl.textContent = `${user.firstName} ${user.lastName}`;
+
+        // Get the user's team
+        const team = mockData.teams.find((t) => t.id === user.teamId);
+
+        if (team) {
+          userTeamEl.textContent = team.name;
+          teamPointsEl.textContent = team.points;
+        }
+
+        // Update user points and progress
+        userPointsEl.textContent = user.points;
+        updateProgressBar(user.points);
+
+        // Load user activities
+        loadUserActivities();
+
+        // Update leaderboards
+        updateLeaderboards();
+      }
+
+      // Handle logout
+      function handleLogout() {
+        currentUser = null;
+
+        // Reset UI
+        mainApp.classList.add("hidden");
+        loginContainer.classList.remove("hidden");
+        userMenu.classList.add("hidden");
+
+        // Clear forms
+        loginForm.reset();
+        registerForm.reset();
+        activityForm.reset();
+      }
+
+      // Toggle user menu
+      function toggleUserMenu() {
+        userMenu.classList.toggle("hidden");
+      }
+
+      // Switch between tabs
+      function switchTab(tabId, tabButtons, tabContents) {
+        // Update tab buttons
+        tabButtons.forEach((button) => {
+          if (button.id === `tab-${tabId}`) {
+            button.classList.remove(
+              "text-gray-500",
+              "hover:text-gray-700",
+              "hover:border-gray-300",
+              "dark:text-gray-400",
+              "dark:hover:text-gray-300",
+              "border-transparent"
+            );
+            button.classList.add("text-primary", "border-primary");
+          } else {
+            button.classList.remove("text-primary", "border-primary");
+            button.classList.add(
+              "text-gray-500",
+              "hover:text-gray-700",
+              "hover:border-gray-300",
+              "dark:text-gray-400",
+              "dark:hover:text-gray-300",
+              "border-transparent"
+            );
+          }
+        });
+
+        // Update tab contents
+        tabContents.forEach((content) => {
+          if (content.id === `content-${tabId}`) {
+            content.classList.remove("hidden");
+          } else {
+            content.classList.add("hidden");
+          }
+        });
+      }
+
+      // Update the activity form based on the selected activity type
+      function updateActivityForm() {
+        const activityType = activityTypeSelect.value;
+
+        if (!activityType) {
+          activityDetailsContainer.innerHTML = "";
+          evidenceUploadContainer.classList.add("hidden");
+          return;
+        }
+
+        const activity = mockData.activityTypes[activityType];
+
+        if (!activity) return;
+
+        // Clear previous content
+        activityDetailsContainer.innerHTML = "";
+
+        // Add activity-specific fields
+        let detailsHtml = "";
+
+        switch (activityType) {
+          case "social_post":
+            detailsHtml = `
+                        <div>
+                            <label for="platform" class="block text-sm font-medium mb-1">Platform</label>
+                            <select id="platform" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                                <option value="" selected disabled>Select platform</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Twitter">Twitter/X</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="post-content" class="block text-sm font-medium mb-1">Post Content</label>
+                            <textarea id="post-content" rows="2" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="Brief description of your post..."></textarea>
+                        </div>
+                    `;
+            break;
+          case "linkedin_connection":
+            detailsHtml = `
+                        <div>
+                            <label for="connection-name" class="block text-sm font-medium mb-1">Connection Name</label>
+                            <input type="text" id="connection-name" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="Name of the Smith MBA student/alumni" required>
+                        </div>
+                        <div>
+                            <label for="connection-role" class="block text-sm font-medium mb-1">Connection Role</label>
+                            <select id="connection-role" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                                <option value="" selected disabled>Select role</option>
+                                <option value="Current Student">Current Student</option>
+                                <option value="Alumni">Alumni</option>
+                            </select>
+                        </div>
+                    `;
+            break;
+          case "share_resource":
+            detailsHtml = `
+                        <div>
+                            <label for="resource-title" class="block text-sm font-medium mb-1">Resource Title</label>
+                            <input type="text" id="resource-title" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="Title of the shared resource" required>
+                        </div>
+                        <div>
+                            <label for="resource-description" class="block text-sm font-medium mb-1">Resource Description</label>
+                            <textarea id="resource-description" rows="2" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="Brief description of the resource..."></textarea>
+                        </div>
+                    `;
+            break;
+          case "smith_representation":
+            detailsHtml = `
+                        <div>
+                            <label for="location" class="block text-sm font-medium mb-1">Location/Event</label>
+                            <input type="text" id="location" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="Where was the photo taken?" required>
+                        </div>
+                        <div>
+                            <label for="swag-type" class="block text-sm font-medium mb-1">Smith/UMD Swag Type</label>
+                            <input type="text" id="swag-type" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="What Smith/UMD item are you wearing/showing?" required>
+                        </div>
+                    `;
+            break;
+          case "team_meetup":
+            detailsHtml = `
+                        <div>
+                            <label for="meetup-date" class="block text-sm font-medium mb-1">Date of Meet-n-Greet</label>
+                            <input type="date" id="meetup-date" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                        <div>
+                            <label for="attendees" class="block text-sm font-medium mb-1">Number of Attendees</label>
+                            <input type="number" id="attendees" min="1" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                        <div>
+                            <label for="total-members" class="block text-sm font-medium mb-1">Total Team Members</label>
+                            <input type="number" id="total-members" min="1" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                    `;
+            break;
+          case "meetup_attendance":
+            detailsHtml = `
+                        <div>
+                            <label for="meetup-team" class="block text-sm font-medium mb-1">Team Meetup Attended</label>
+                            <select id="meetup-team" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                                <option value="" selected disabled>Select team</option>
+                                ${mockData.teams
+                                  .map(
+                                    (team) =>
+                                      `<option value="${team.name}">${team.name}</option>`
+                                  )
+                                  .join("")}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="meetup-date" class="block text-sm font-medium mb-1">Date of Meet-n-Greet</label>
+                            <input type="date" id="meetup-date" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                    `;
+            break;
+          case "admitted_event":
+            detailsHtml = `
+                        <div>
+                            <label for="event-name" class="block text-sm font-medium mb-1">Event Name</label>
+                            <select id="event-name" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                                <option value="" selected disabled>Select event</option>
+                                <option value="Shell of a Brunch">Shell of a Brunch</option>
+                                <option value="Preparing for Graduate School Webinar">Preparing for Graduate School Webinar</option>
+                                <option value="Smith Trivia Night">Smith Trivia Night</option>
+                                <option value="Other">Other (specify in notes)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="event-date" class="block text-sm font-medium mb-1">Event Date</label>
+                            <input type="date" id="event-date" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                    `;
+            break;
+          default:
+            detailsHtml = `
+                        <div>
+                            <label for="activity-details" class="block text-sm font-medium mb-1">Activity Details</label>
+                            <textarea id="activity-details-text" rows="3" class="w-full px-4 py-2 border rounded-md text-base focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600" placeholder="Provide details about this activity..."></textarea>
+                        </div>
+                    `;
+        }
+
+        // Add point information
+        detailsHtml += `
+                <div class="mt-2 px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-sm font-medium">Points:</span>
+                            <span class="text-sm text-primary font-bold">${
+                              activity.points
+                            }</span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium">Limit:</span>
+                            <span class="text-sm">${
+                              activity.limit === 999
+                                ? "No limit"
+                                : activity.limit
+                            }</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        activityDetailsContainer.innerHTML = detailsHtml;
+
+        // Show/hide evidence upload
+        if (activity.evidence) {
+          evidenceUploadContainer.classList.remove("hidden");
+        } else {
+          evidenceUploadContainer.classList.add("hidden");
+        }
+      }
+
+      // Handle file upload
+      function handleFileUpload(e) {
+        const file = e.target.files[0];
+
+        if (file) {
+          fileName.textContent = file.name;
+          filePreview.classList.remove("hidden");
+        }
+      }
+
+      // Remove uploaded file
+      function removeFile() {
+        fileUpload.value = "";
+        fileName.textContent = "";
+        filePreview.classList.add("hidden");
+      }
+
+      // Handle activity submission
+      function handleActivitySubmit(e) {
+        e.preventDefault();
+
+        if (!currentUser) return;
+
+        const activityType = activityTypeSelect.value;
+
+        if (!activityType) {
+          showNotification("Please select an activity type.", "error");
+          return;
+        }
+
+        const activity = mockData.activityTypes[activityType];
+
+        // Check if user has reached the limit for this activity type
+        const userActivitiesOfType = mockData.activities.filter(
+          (a) =>
+            a.userId === currentUser.id &&
+            a.type === activityType &&
+            a.status !== "rejected"
+        );
+
+        if (userActivitiesOfType.length >= activity.limit) {
+          showNotification(
+            `You have reached the limit (${activity.limit}) for this activity type.`,
+            "error"
+          );
+          return;
+        }
+
+        // Check if evidence is required but not provided
+        if (activity.evidence && fileUpload.files.length === 0) {
+          showNotification(
+            "Please upload evidence for this activity.",
+            "error"
+          );
+          return;
+        }
+
+        // Get notes
+        const notes = document.getElementById("notes").value;
+
+        // Create activity details
+        let details = "";
+
+        switch (activityType) {
+          case "social_post":
+            const platform = document.getElementById("platform").value;
+            const postContent = document.getElementById("post-content").value;
+            details = `${platform} post: ${postContent}`;
+            break;
+          case "linkedin_connection":
+            const connectionName =
+              document.getElementById("connection-name").value;
+            const connectionRole =
+              document.getElementById("connection-role").value;
+            details = `Connected with ${connectionName} (${connectionRole})`;
+            break;
+          case "share_resource":
+            const resourceTitle =
+              document.getElementById("resource-title").value;
+            const resourceDescription = document.getElementById(
+              "resource-description"
+            ).value;
+            details = `Shared resource: ${resourceTitle} - ${resourceDescription}`;
+            break;
+          case "smith_representation":
+            const location = document.getElementById("location").value;
+            const swagType = document.getElementById("swag-type").value;
+            details = `Representing Smith at ${location} wearing/showing ${swagType}`;
+            break;
+          case "team_meetup":
+            const meetupDate = document.getElementById("meetup-date").value;
+            const attendees = document.getElementById("attendees").value;
+            const totalMembers = document.getElementById("total-members").value;
+            details = `Team Meet-n-Greet on ${meetupDate} with ${attendees}/${totalMembers} members`;
+            break;
+          case "meetup_attendance":
+            const meetupTeam = document.getElementById("meetup-team").value;
+            const meetupDateAttended =
+              document.getElementById("meetup-date").value;
+            details = `Attended ${meetupTeam} Meet-n-Greet on ${meetupDateAttended}`;
+            break;
+          case "admitted_event":
+            const eventName = document.getElementById("event-name").value;
+            const eventDate = document.getElementById("event-date").value;
+            details = `Attended ${eventName} on ${eventDate}`;
+            break;
+          default:
+            const activityDetailsText = document.getElementById(
+              "activity-details-text"
+            )?.value;
+            details = activityDetailsText || "No details provided";
+        }
+
+        // Create new activity
+        const newActivity = {
+          id: mockData.activities.length + 1,
+          userId: currentUser.id,
+          type: activityType,
+          details,
+          points: activity.points,
+          date: new Date().toISOString().split("T")[0],
+          status: "pending",
+          evidence:
+            fileUpload.files.length > 0 ? fileUpload.files[0].name : null,
+          notes,
+        };
+
+        // Add to mock data
+        mockData.activities.push(newActivity);
+
+        // Update UI
+        loadUserActivities();
+
+        // Reset form
+        activityForm.reset();
+        activityDetailsContainer.innerHTML = "";
+        evidenceUploadContainer.classList.add("hidden");
+        filePreview.classList.add("hidden");
+
+        showNotification(
+          `Activity submitted successfully! It will be reviewed by the admin.`,
+          "success"
+        );
+      }
+
+      // Load user activities
+      function loadUserActivities() {
+        if (!currentUser) return;
+
+        // Get user activities
+        const userActivities = mockData.activities
+          .filter((a) => a.userId === currentUser.id)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (userActivities.length === 0) {
+          activityHistoryTable.innerHTML = "";
+          noHistoryMessage.classList.remove("hidden");
+          return;
+        }
+
+        noHistoryMessage.classList.add("hidden");
+
+        // Render activities
+        activityHistoryTable.innerHTML = userActivities
+          .map((activity) => {
+            const activityType = mockData.activityTypes[activity.type];
+
+            let statusClass, statusIcon;
+            switch (activity.status) {
+              case "approved":
+                statusClass = "text-green-500";
+                statusIcon = "check-circle";
+                break;
+              case "rejected":
+                statusClass = "text-red-500";
+                statusIcon = "times-circle";
+                break;
+              default:
+                statusClass = "text-yellow-500";
+                statusIcon = "clock";
+            }
+
+            return `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm">${formatDate(
+                              activity.date
+                            )}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium">${
+                              activityType?.name || activity.type
+                            }</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">${
+                              activity.details
+                            }</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium">${
+                              activity.points
+                            }</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <i class="fas fa-${statusIcon} ${statusClass} mr-1.5"></i>
+                                <span class="text-sm ${statusClass}">${
+              activity.status.charAt(0).toUpperCase() + activity.status.slice(1)
+            }</span>
+                            </div>
+                            ${
+                              activity.status === "rejected" && activity.notes
+                                ? `<div class="text-xs text-red-400 mt-1">Reason: ${activity.notes}</div>`
+                                : ""
+                            }
+                        </td>
+                    </tr>
+                `;
+          })
+          .join("");
+      }
+
+      // Update leaderboards
+      function updateLeaderboards() {
+        // Team leaderboard
+        const sortedTeams = [...mockData.teams].sort(
+          (a, b) => b.points - a.points
+        );
+
+        teamLeaderboardContainer.innerHTML = sortedTeams
+          .map((team, index) => {
+            return `
+                    <div class="flex items-center p-3 ${
+                      index === 0
+                        ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800"
+                        : "bg-white dark:bg-gray-800"
+                    } rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center ${
+                          index < 3
+                            ? "bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                        } rounded-full font-bold">
+                            ${index + 1}
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-sm font-medium">${team.name}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold">${team.points}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">points</p>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+
+        // Individual leaderboard
+        const sortedUsers = [...mockData.users].sort(
+          (a, b) => b.points - a.points
+        );
+
+        individualLeaderboardContainer.innerHTML = sortedUsers
+          .slice(0, 10)
+          .map((user, index) => {
+            const team = mockData.teams.find((t) => t.id === user.teamId);
+            const isCurrentUser = currentUser && user.id === currentUser.id;
+
+            return `
+                    <div class="flex items-center p-3 ${
+                      isCurrentUser
+                        ? "bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800"
+                        : index === 0
+                        ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800"
+                        : "bg-white dark:bg-gray-800"
+                    } rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center ${
+                          index < 3
+                            ? "bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                        } rounded-full font-bold">
+                            ${index + 1}
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-sm font-medium">${user.firstName} ${
+              user.lastName
+            }</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">${
+                              team?.name
+                            }</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold">${user.points}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">points</p>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      // Update progress bar
+      function updateProgressBar(points) {
+        const levels = [10, 25, 50, 100, 200, 500];
+
+        let currentLevel = 0;
+        let nextLevel = levels[0];
+
+        for (let i = 0; i < levels.length; i++) {
+          if (points >= levels[i]) {
+            currentLevel = levels[i];
+            nextLevel = levels[i + 1] || currentLevel * 2;
+          } else {
+            nextLevel = levels[i];
+            break;
+          }
+        }
+
+        const percentage =
+          currentLevel === 0
+            ? (points / nextLevel) * 100
+            : ((points - currentLevel) / (nextLevel - currentLevel)) * 100;
+
+        progressBarEl.style.width = `${Math.min(percentage, 100)}%`;
+        nextLevelEl.textContent = `${nextLevel} points`;
+      }
+
+      // Show notification
+      function showNotification(message, type = "success") {
+        notificationText.textContent = message;
+
+        if (type === "success") {
+          notification.classList.remove("border-red-500", "border-yellow-500");
+          notification.classList.add("border-green-500");
+          notificationIcon.classList.remove(
+            "fa-times-circle",
+            "fa-exclamation-triangle",
+            "text-red-500",
+            "text-yellow-500"
+          );
+          notificationIcon.classList.add("fa-check-circle", "text-green-500");
+        } else if (type === "error") {
+          notification.classList.remove(
+            "border-green-500",
+            "border-yellow-500"
+          );
+          notification.classList.add("border-red-500");
+          notificationIcon.classList.remove(
+            "fa-check-circle",
+            "fa-exclamation-triangle",
+            "text-green-500",
+            "text-yellow-500"
+          );
+          notificationIcon.classList.add("fa-times-circle", "text-red-500");
+        } else if (type === "warning") {
+          notification.classList.remove("border-green-500", "border-red-500");
+          notification.classList.add("border-yellow-500");
+          notificationIcon.classList.remove(
+            "fa-check-circle",
+            "fa-times-circle",
+            "text-green-500",
+            "text-red-500"
+          );
+          notificationIcon.classList.add(
+            "fa-exclamation-triangle",
+            "text-yellow-500"
+          );
+        }
+
+        notification.classList.remove("scale-0");
+        notification.classList.add("scale-100");
+
+        // Auto-hide after 5 seconds
+        setTimeout(hideNotification, 5000);
+      }
+
+      // Hide notification
+      function hideNotification() {
+        notification.classList.remove("scale-100");
+        notification.classList.add("scale-0");
+      }
+
+      // Helper function to format date
+      function formatDate(dateString) {
+        const options = { month: "short", day: "numeric", year: "numeric" };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+      }
+    </script>
+  </body>
+</html>
